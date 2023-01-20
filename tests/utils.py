@@ -26,13 +26,17 @@ class ChoiceFieldTestSerializer(serializers.Serializer):
     choice_field_float = serializers.ChoiceField(choices=[1.2, 3.1])
     choice_field_bool = serializers.ChoiceField(choices=[True, False])
     choice_field_str = serializers.ChoiceField(choices=["a", "b"])
-    choice_field_str_blank = serializers.ChoiceField(choices=["a", "b"], allow_blank=True)
+    choice_field_str_blank = serializers.ChoiceField(
+        choices=["a", "b"], allow_blank=True
+    )
     choice_field_int_null = serializers.ChoiceField(choices=[1, 2], allow_null=True)
 
 
 class ListFieldTestSerializer(serializers.Serializer):
     lst = serializers.ListField(child=serializers.IntegerField())
-    composite_lst = serializers.ListField(child=serializers.IntegerField(), allow_null=True)
+    composite_lst = serializers.ListField(
+        child=serializers.IntegerField(), allow_null=True
+    )
     multichoice = serializers.MultipleChoiceField(choices=[1, 2, 3])
 
 
@@ -42,7 +46,7 @@ class Model(models.Model):
     case_field = models.IntegerField()
 
     class Meta:
-        app_label = 'tests'
+        app_label = "tests"
 
 
 class ModelTestSerializer(serializers.ModelSerializer):
@@ -50,7 +54,7 @@ class ModelTestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Model
-        fields = ['field1', 'field2', 'field3', 'case_field']
+        fields = ["field1", "field2", "field3", "case_field"]
 
 
 class NestedSerializersTestSerializer(serializers.Serializer):

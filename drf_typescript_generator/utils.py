@@ -6,41 +6,47 @@ from collections import OrderedDict
 from rest_framework import serializers, views
 
 from drf_typescript_generator.globals import (
-    CHOICES_TRANSFORM_FUNCTIONS_BY_TYPE, DEFAULT_TYPE, MAPPING, SPECIAL_FIELD_TYPES
+    CHOICES_TRANSFORM_FUNCTIONS_BY_TYPE,
+    DEFAULT_TYPE,
+    MAPPING,
+    SPECIAL_FIELD_TYPES,
 )
 
+
 def _is_api_view(member):
-    """ Returns whether the `member` is drf api view """
+    """Returns whether the `member` is drf api view"""
     return inspect.isclass(member) and views.APIView in inspect.getmro(member)
 
 
 def _is_serializer_class(member):
-    """ Returns whether the `member` is drf serializer class or not """
-    return inspect.isclass(member) and serializers.BaseSerializer in inspect.getmro(member)
+    """Returns whether the `member` is drf serializer class or not"""
+    return inspect.isclass(member) and serializers.BaseSerializer in inspect.getmro(
+        member
+    )
 
 
 def _to_camelcase(s):
-    parts = s.split('_')
-    return parts[0] + ''.join([part.capitalize() for part in parts[1:]])
+    parts = s.split("_")
+    return parts[0] + "".join([part.capitalize() for part in parts[1:]])
 
 
 def _check_for_nullable(field, typescript_type):
     if field.allow_null:
-        typescript_type += ' | null'
+        typescript_type += " | null"
     return typescript_type
 
 
 def _get_project_name():
-    return os.environ['DJANGO_SETTINGS_MODULE'].split('.')[0]
+    return os.environ["DJANGO_SETTINGS_MODULE"].split(".")[0]
 
 
 def _get_typescript_name(field, field_name, options={}):
-    if options.get('preserve_case', False):
+    if options.get("preserve_case", False):
         typescript_field_name = field_name
     else:
         typescript_field_name = _to_camelcase(field_name)
     if not field.read_only and not field.required:
-        typescript_field_name += '?'
+        typescript_field_name += "?"
     return typescript_field_name
 
 
@@ -49,7 +55,7 @@ def _get_method_return_value_type(field, field_name, serializer_instance):
     For given method field function looks for return type of corresponding
     method in type annotations.
     """
-    method_name = field.method_name if field.method_name else f'get_{field_name}'
+    method_name = field.method_name if field.method_name else f"get_{field_name}"
     method = getattr(serializer_instance, method_name)
     method_signature = inspect.signature(method)
     return MAPPING.get(method_signature.return_annotation, DEFAULT_TYPE), False
@@ -61,10 +67,13 @@ def _get_choice_selection_fields_type(field):
     by enumerating its choices. Also takes into account the
     allow_blank argument.
     """
+
     def transform_choice(v):
         return str(CHOICES_TRANSFORM_FUNCTIONS_BY_TYPE[type(v)](v))
 
-    typescript_type = ' | '.join([transform_choice(choice) for choice in field.choices.keys()])
+    typescript_type = " | ".join(
+        [transform_choice(choice) for choice in field.choices.keys()]
+    )
     is_list = type(field) == serializers.MultipleChoiceField
     if field.allow_blank:
         typescript_type += ' | ""'
@@ -84,7 +93,7 @@ def _handle_special_field_type(field, field_name, serializer_instance):
         return _get_choice_selection_fields_type(field)
     else:
         raise NotImplementedError(
-            f'Handling of {type(field).__name__} special field is not implemented'
+            f"Handling of {type(field).__name__} special field is not implemented"
         )
 
 
@@ -95,7 +104,7 @@ def _handle_nonspecial_field_type(field):
     String fields category, Numeric fields category, ...
     """
     # core type is type of child in listfield / nested serializer with many=True
-    is_list = hasattr(field, 'child')
+    is_list = hasattr(field, "child")
     field_type = type(field.child) if is_list else type(field)
 
     if _is_serializer_class(field_type):
@@ -114,17 +123,19 @@ def _get_typescript_type(field, field_name, serializer_instance):
     If mapping for field type was not found default type is returned.
     """
     if type(field) in SPECIAL_FIELD_TYPES:
-        typescript_type, is_list = _handle_special_field_type(field, field_name, serializer_instance)
+        typescript_type, is_list = _handle_special_field_type(
+            field, field_name, serializer_instance
+        )
     else:
         typescript_type, is_list = _handle_nonspecial_field_type(field)
 
     typescript_type = _check_for_nullable(field, typescript_type)
 
-    if is_list and '|' in typescript_type:
+    if is_list and "|" in typescript_type:
         # composite type array needs to be in parenthesis e.g. (number | null)[]
-        typescript_type = f'({typescript_type})'
+        typescript_type = f"({typescript_type})"
 
-    return typescript_type + ('[]' if is_list else '')
+    return typescript_type + ("[]" if is_list else "")
 
 
 def get_nested_serializers(serializer):
@@ -137,7 +148,7 @@ def get_nested_serializers(serializer):
     fields = serializer_instance.get_fields()
     nested_serializers = {}
     for field in fields.values():
-        is_list = hasattr(field, 'child')
+        is_list = hasattr(field, "child")
         field_type = type(field.child) if is_list else type(field)
         if _is_serializer_class(field_type):
             nested_serializers[field_type.__name__] = field_type
@@ -164,21 +175,21 @@ def get_serializer_fields(serializer, options={}):
 
 
 def get_app_api_views(app_name):
-    """ Returns all api views classes found in {app_name}.urls module """
+    """Returns all api views classes found in {app_name}.urls module"""
     try:
-        urls_module = importlib.import_module('.urls', package=app_name)
+        urls_module = importlib.import_module(".urls", package=app_name)
         return inspect.getmembers(urls_module, _is_api_view)
     except ImportError:
         return []
 
 
 def get_project_api_views():
-    """ Returns all api views classes found in project urls module """
+    """Returns all api views classes found in project urls module"""
     return get_app_api_views(_get_project_name())
 
 
 def get_module_serializers(module):
-    """ Returns all serializer classes found in given module """
+    """Returns all serializer classes found in given module"""
     try:
         urls_module = importlib.import_module(module)
         return inspect.getmembers(urls_module, _is_serializer_class)
@@ -188,17 +199,21 @@ def get_module_serializers(module):
 
 def export_serializer(serializer_name, fields, options):
     def format_field(field, indent):
-        formatted = f'{indent}{field[0]}: {field[1]}'
-        if options['semicolons']:
-            formatted += ';'
+        formatted = f"{indent}{field[0]}: {field[1]}"
+        if options["semicolons"]:
+            formatted += ";"
         return formatted
 
-    indent = '\t' * options['tabs'] if options['tabs'] is not None else ' ' * options['spaces']
-    attributes = '\n'.join([format_field(field, indent) for field in fields.items()])
+    indent = (
+        "\t" * options["tabs"]
+        if options["tabs"] is not None
+        else " " * options["spaces"]
+    )
+    attributes = "\n".join([format_field(field, indent) for field in fields.items()])
 
-    if options['format'] == 'type':
-        template = 'export type {} = {{\n{}\n}}\n\n'
+    if options["format"] == "type":
+        template = "export type {} = {{\n{}\n}}\n\n"
     else:
-        template = 'export interface {} {{\n{}\n}}\n\n'
+        template = "export interface {} {{\n{}\n}}\n\n"
 
     return template.format(serializer_name, attributes)

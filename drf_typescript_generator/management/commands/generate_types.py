@@ -7,12 +7,11 @@ from drf_typescript_generator.utils import (
     get_nested_serializers,
     get_serializer_fields,
     get_project_api_views,
-    get_app_api_views
+    get_app_api_views,
 )
 
 
 class Command(AppCommand):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.already_parsed = set()
@@ -20,20 +19,27 @@ class Command(AppCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--format', type=str, choices=['type', 'interface'], default='type',
-            help='Specifies whether the result will be types or interfaces'
+            "--format",
+            type=str,
+            choices=["type", "interface"],
+            default="type",
+            help="Specifies whether the result will be types or interfaces",
         )
         parser.add_argument(
-            '--semicolons', action='store_true', default=False,
-            help='Semicolons will be added if this argument is present'
+            "--semicolons",
+            action="store_true",
+            default=False,
+            help="Semicolons will be added if this argument is present",
         )
         parser.add_argument(
-            '--preserve-case', action='store_true', default=False,
-            help='Preserve field name case from serializers'
+            "--preserve-case",
+            action="store_true",
+            default=False,
+            help="Preserve field name case from serializers",
         )
         whitespace_group = parser.add_mutually_exclusive_group()
-        whitespace_group.add_argument('--spaces', type=int, default=2)
-        whitespace_group.add_argument('--tabs', type=int)
+        whitespace_group.add_argument("--spaces", type=int, default=2)
+        whitespace_group.add_argument("--tabs", type=int)
 
         return super().add_arguments(parser)
 
@@ -41,9 +47,11 @@ class Command(AppCommand):
         views_modules = set()
         serializers = set()
 
-        for _name, api_view_class in self.project_api_views + get_app_api_views(app_config.name):
+        for _name, api_view_class in self.project_api_views + get_app_api_views(
+            app_config.name
+        ):
             module = api_view_class.__module__
-            if module.split('.')[0] == app_config.name:
+            if module.split(".")[0] == app_config.name:
                 views_modules.add(module)
 
         # extract all serializers found in views modules
@@ -59,7 +67,9 @@ class Command(AppCommand):
             # TS equivalent is generated even if they are not used in views module
             nested_serializers = get_nested_serializers(serializer)
             for nested_serializer_name, nested_serializer in nested_serializers.items():
-                self.process_serializer(nested_serializer_name, nested_serializer, options)
+                self.process_serializer(
+                    nested_serializer_name, nested_serializer, options
+                )
 
             fields = get_serializer_fields(serializer, options)
             ts_serializer = export_serializer(serializer_name, fields, options)

@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "drf-typescript-generator"
-version = "0.1.1"
+version = "0.2.0"
 description = "Package for generating TypeScript types from DRF serializers"
-authors = ["napmn <lukass135@gmail.com>"]
+authors = ["napmn <lukass135@gmail.com>", "Dmitry Vakhnenko <dima@dima-v.ru>"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/remastr/drf-typescript-generator"
@@ -13,13 +13,14 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"
-Django = ">=3.2.4"
-djangorestframework = ">=3.12.4"
+python = "^3.11"
+Django = ">=4.1"
+djangorestframework = ">=3.14"
 
 [tool.poetry.dev-dependencies]
-pytest = "^4.6"
+pytest = "^7.2"
+black = "^22.12"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
